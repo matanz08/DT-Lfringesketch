@@ -1,0 +1,462 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Fringe Sketch — Economic & Institutional Pressures</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600&family=DM+Serif+Display&display=swap');
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{width:100%;height:100%;background:#0b1220;font-family:'DM Sans',sans-serif;}
+  body{display:flex;flex-direction:column;align-items:center;}
+
+  #header{width:100%;max-width:1400px;padding:28px 40px 12px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;}
+  #header-left h1{font-family:'DM Serif Display',serif;font-size:22px;color:#e8e4d8;font-weight:400;letter-spacing:0.01em;line-height:1.3;}
+  #header-left p{font-size:11px;color:#6b7a8d;margin-top:4px;letter-spacing:0.06em;text-transform:uppercase;}
+  #dl-btn{background:transparent;border:0.5px solid #3a4a5e;color:#8fa3b8;font-size:11px;font-family:'DM Sans',sans-serif;padding:7px 14px;border-radius:6px;cursor:pointer;white-space:nowrap;letter-spacing:0.04em;transition:all .15s;}
+  #dl-btn:hover{background:#1a2535;border-color:#5a7a9e;color:#b8cfe0;}
+
+  #legend{display:flex;gap:20px;flex-wrap:wrap;padding:0 40px 8px;width:100%;max-width:1400px;align-items:center;}
+  .lg{display:flex;align-items:center;gap:6px;font-size:10px;color:#5a6a7e;letter-spacing:0.04em;}
+  .lg-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0;}
+  .lg-line{width:20px;height:0;border-top:1.5px solid;flex-shrink:0;}
+  .lg-sep{width:1px;height:14px;background:#2a3545;margin:0 4px;}
+
+  #canvas-wrap{width:100%;max-width:1400px;padding:0 20px 20px;}
+  canvas{display:block;width:100%;border-radius:12px;cursor:default;}
+
+  #panel{display:none;width:100%;max-width:1400px;padding:0 40px 28px;}
+  #panel.on{display:block;}
+  #panel-inner{background:#111c2d;border:0.5px solid #2a3d52;border-radius:10px;padding:18px 22px;}
+  .pc{font-size:10px;font-weight:600;letter-spacing:.08em;text-transform:uppercase;margin-bottom:4px;}
+  .pn{font-size:16px;font-weight:500;color:#dde4ee;margin-bottom:8px;font-family:'DM Serif Display',serif;}
+  .pd{font-size:12px;color:#7a8fa5;line-height:1.7;margin-bottom:12px;}
+  .pfl{font-size:10px;font-weight:600;color:#4a5a6e;letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+  .ptag{display:inline-block;font-size:10px;padding:3px 9px;border-radius:20px;margin:2px 3px 2px 0;border:0.5px solid;letter-spacing:0.02em;}
+  .pcl{float:right;font-size:10px;color:#4a5a6e;cursor:pointer;padding:3px 9px;border-radius:4px;border:0.5px solid #2a3545;background:transparent;font-family:'DM Sans',sans-serif;}
+  .pcl:hover{background:#1a2535;color:#8a9aae;}
+
+  .hint{font-size:10px;color:#3a4a5e;padding:0 40px 4px;width:100%;max-width:1400px;letter-spacing:0.03em;}
+</style>
+</head>
+<body>
+
+<div id="header">
+  <div id="header-left">
+    <h1>Economic &amp; Institutional Pressures</h1>
+    <p>Step 1 · Fringe Sketch · Marin Vale · BLAW4320 · 2026–2040</p>
+  </div>
+  <button id="dl-btn" onclick="downloadPNG()">Download PNG</button>
+</div>
+
+<div id="legend">
+  <span class="lg"><span class="lg-dot" style="background:#3a7fc1"></span>Governance</span>
+  <span class="lg"><span class="lg-dot" style="background:#c17a2a"></span>Economic</span>
+  <span class="lg"><span class="lg-dot" style="background:#4a9a5a"></span>Social</span>
+  <span class="lg"><span class="lg-dot" style="background:#7a5ac1"></span>Technology</span>
+  <span class="lg"><span class="lg-dot" style="background:#6a7a8a"></span>Infrastructure</span>
+  <span class="lg-sep"></span>
+  <span class="lg"><span class="lg-line" style="border-color:#c44;border-top-style:solid"></span>Active friction</span>
+  <span class="lg"><span class="lg-line" style="border-color:#c4842a;border-top-style:dashed"></span>Latent</span>
+  <span class="lg"><span class="lg-line" style="border-color:#3a7fc1;border-top-style:dotted"></span>Early signal</span>
+</div>
+
+<div class="hint">Click any node to explore its connections.</div>
+<div id="canvas-wrap"><canvas id="c"></canvas></div>
+
+<div id="panel">
+  <div id="panel-inner">
+    <button class="pcl" onclick="closePanel()">close</button>
+    <div class="pc" id="pc"></div>
+    <div class="pn" id="pn"></div>
+    <div class="pd" id="pd"></div>
+    <div class="pfl" id="pfl"></div>
+    <div id="ptags"></div>
+  </div>
+</div>
+
+<script>
+const CAT={
+  gov:{stroke:'#3a7fc1',fill:'#0e2035',text:'#7ab8e8',label:'Governance'},
+  econ:{stroke:'#c17a2a',fill:'#201408',text:'#e8a860',label:'Economic'},
+  social:{stroke:'#4a9a5a',fill:'#0a1e0e',text:'#7acc8a',label:'Social'},
+  tech:{stroke:'#7a5ac1',fill:'#150d2a',text:'#b090e8',label:'Technology'},
+  infra:{stroke:'#6a7a8a',fill:'#141a22',text:'#9aaaba',label:'Infrastructure'}
+};
+const FSTROKE={active:'#cc4444',latent:'#c4842a',early:'#3a7fc1'};
+const FSTATUS={active:'Already active',latent:'Latent',early:'Early signal'};
+
+const nodes=[
+  {id:0,label:'Public\nEducation',cat:'social',short:'Public Education System',
+   desc:'Structurally dependent on property-tax funding (K–12) and tuition/subsidy models (post-secondary). Under compounding stress from enrollment decline, cost disease, and platform substitution. Authority sits with local school boards; fragility hides in underfunded districts that cannot absorb enrollment volatility.'},
+  {id:1,label:'Healthcare\n& Public Health',cat:'social',short:'Healthcare & Public Health Infrastructure',
+   desc:'U.S. healthcare spending exceeds GDP growth for decades. Structural fragility compounded by vertical integration by private insurers and diagnostics firms. Safety-net hospital capacity at risk from private system consolidation.'},
+  {id:2,label:'Social\nServices',cat:'social',short:'Social Services & Safety Net',
+   desc:'SNAP, housing vouchers, TANF, SSI/SSDI, child welfare. Fragmented federal-state administration, means-testing compression, and eligibility bottlenecks produce systematic under-enrollment among qualifying households.'},
+  {id:3,label:'Pension &\nRetirement',cat:'econ',short:'Pension & Retirement Systems',
+   desc:'State/municipal defined-benefit funds face long-term actuarial shortfalls. Risk shifted to individuals via defined-contribution. Social Security faces projected trust fund depletion by mid-2030s. $1.4T in aggregate unfunded liability.'},
+  {id:4,label:'Criminal\nJustice',cat:'gov',short:'Criminal Justice & Carceral System',
+   desc:'Extracts labor capacity and fiscal resources from communities, disproportionately affecting low-income populations. Public defender underfunding and reentry services are systematically under-resourced relative to enforcement.'},
+  {id:5,label:'Public Housing\n& Urban Infra',cat:'infra',short:'Public Housing & Urban Infrastructure',
+   desc:'Aging housing stock, chronic Section 8 underfunding, landlord non-participation. Water systems, transit, and urban public space decay compounds service delivery failure across metro areas.'},
+  {id:6,label:'Democratic\nGovernance',cat:'gov',short:'Democratic Governance & Electoral Systems',
+   desc:'Declining legislative capacity and regulatory hollowing-out reduce the system\'s ability to adapt institutions to new economic conditions. AI-generated political content creates new accountability gaps in electoral infrastructure.'},
+  {id:7,label:'Labor\nMarkets',cat:'econ',short:'Labor Markets & Employment Institutions',
+   desc:'Union density, gig economy classification, occupational licensing, and workforce development programs collectively determine how labor income is distributed and how displaced workers re-enter employment.'},
+  {id:8,label:'Platform\nEconomy',cat:'tech',short:'Platform Economy & Digital Infrastructure',
+   desc:'Platform firms capture high-margin segments while leaving expensive, low-margin services to public institutions — producing a two-tier service landscape: private efficiency for those who can pay, degraded public provision for those who cannot.'},
+  {id:9,label:'Financial\nSystem',cat:'econ',short:'Financial System & Household Debt',
+   desc:'Consumer debt (student, medical, housing, revolving) has reached levels that eliminate individual financial buffers. BNPL products now used for groceries and medical bills — operating outside consumer protection frameworks.'},
+  {id:10,label:'Media &\nInformation',cat:'tech',short:'Media & Information Ecosystem',
+   desc:'Local news collapse removes the primary accountability mechanism for state and municipal institutional performance. AI-generated content and algorithmic amplification of distrust erode the information infrastructure democratic governance requires.'},
+  {id:11,label:'Civil\nSociety',cat:'social',short:'Civil Society & Nonprofit Sector',
+   desc:'Mutual aid networks, legal aid organizations, and advocacy groups function as informal welfare substitutes when public institutions contract. Capacity is finite, geographically uneven, and not designed to absorb structural service gaps at scale.'},
+  {id:12,label:'Climate\nInfrastructure',cat:'infra',short:'Environmental & Climate Infrastructure',
+   desc:'Growing demand that current institutions were not designed to serve. Climate events function as stress tests exposing institutional brittleness. Costs fall disproportionately on low-income communities and communities of color.'},
+  {id:13,label:'Statistical\nInfrastructure',cat:'gov',short:'Statistical & Measurement Infrastructure',
+   desc:'Census Bureau, BLS, BEA, NCES constitute the data layer that makes institutional performance visible. Underfunding creates policy blindness precisely when precision is most needed — degrading in parallel with the institutions it assesses.'},
+];
+
+const frictions=[
+  {a:8,b:0,status:'active',label:'Platform data extraction inside public education mission'},
+  {a:3,b:12,status:'active',label:'No fiscal headroom as climate demand grows continuously'},
+  {a:6,b:1,status:'active',label:'Trust erosion feeds public health non-compliance loop'},
+  {a:8,b:1,status:'latent',label:'Antitrust standard misaligned with healthcare consolidation harm'},
+  {a:3,b:5,status:'active',label:'Pension obligations crowd out housing and social services'},
+  {a:7,b:8,status:'latent',label:'Displacement velocity exceeds workforce retraining design capacity'},
+  {a:13,b:6,status:'early',label:'Measurement failure makes managed decline invisible to policymakers'},
+  {a:10,b:6,status:'active',label:'Local news collapse removes democratic accountability infrastructure'},
+  {a:5,b:7,status:'active',label:'Housing cost fragments labor markets geographically'},
+  {a:3,b:6,status:'latent',label:'Generational risk transfer threatens civic participation and tax compliance'},
+];
+
+const canvas=document.getElementById('c');
+const ctx=canvas.getContext('2d');
+let W,H,dpr,selectedId=null;
+
+// Carefully placed node positions (as fractions of W, H)
+// Arranged so nothing overlaps, mind-map organic feel
+const POS=[
+  // id: [fx, fy]
+  [0,  0.28, 0.10],  // Public Education — upper-left
+  [1,  0.50, 0.06],  // Healthcare — top-center
+  [2,  0.82, 0.12],  // Social Services — upper-right
+  [3,  0.10, 0.35],  // Pension — mid-left
+  [4,  0.08, 0.62],  // Criminal Justice — lower-left
+  [5,  0.22, 0.86],  // Public Housing — bottom-left
+  [6,  0.50, 0.92],  // Democratic Governance — bottom-center
+  [7,  0.78, 0.86],  // Labor Markets — bottom-right
+  [8,  0.92, 0.62],  // Platform Economy — lower-right
+  [9,  0.90, 0.35],  // Financial System — mid-right
+  [10, 0.72, 0.10],  // Media — upper-right
+  [11, 0.08, 0.20],  // Civil Society — far upper-left
+  [12, 0.10, 0.50],  // Climate — left-mid
+  [13, 0.90, 0.50],  // Statistical — right-mid
+];
+
+function resize(){
+  const wrap=document.getElementById('canvas-wrap');
+  W=Math.min(wrap.clientWidth,1360);
+  H=Math.round(W*0.64);
+  dpr=window.devicePixelRatio||1;
+  canvas.width=W*dpr; canvas.height=H*dpr;
+  canvas.style.width=W+'px'; canvas.style.height=H+'px';
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  POS.forEach(p=>{
+    const nd=nodes[p[0]];
+    nd.x=W*p[1]; nd.y=H*p[2];
+    nd.rx=Math.round(W*0.062); nd.ry=Math.round(H*0.058);
+  });
+}
+
+function drawRoundedRect(x,y,w,h,r,fill,stroke,lw){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y);
+  ctx.lineTo(x+w-r,y);
+  ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r);
+  ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h);
+  ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r);
+  ctx.quadraticCurveTo(x,y,x+r,y);
+  ctx.closePath();
+  ctx.fillStyle=fill; ctx.fill();
+  ctx.strokeStyle=stroke; ctx.lineWidth=lw; ctx.stroke();
+}
+
+function drawLabel(text,x,y,fs,color){
+  ctx.fillStyle=color;
+  ctx.font=`500 ${fs}px 'DM Sans',sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  const lines=text.split('\n');
+  const lh=fs*1.3;
+  lines.forEach((l,i)=>ctx.fillText(l,x,y+(i-(lines.length-1)/2)*lh));
+}
+
+function curvedLine(x1,y1,x2,y2,cx0,cy0){
+  const cpx1=x1+(cx0-x1)*0.3, cpy1=y1+(cy0-y1)*0.3;
+  const cpx2=x2+(cx0-x2)*0.3, cpy2=y2+(cy0-y2)*0.3;
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.bezierCurveTo(cpx1,cpy1,cpx2,cpy2,x2,y2);
+  ctx.stroke();
+}
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // Dark bg
+  ctx.fillStyle='#0b1220';
+  ctx.fillRect(0,0,W,H);
+
+  const ccx=W/2, ccy=H/2;
+  const crw=Math.round(W*0.085), crh=Math.round(H*0.075);
+
+  // Branch lines from center to each node
+  nodes.forEach(nd=>{
+    const cat=CAT[nd.cat];
+    const isSelected=selectedId===nd.id;
+    const connected=selectedId!==null&&frictions.some(f=>(f.a===selectedId||f.b===selectedId)&&(f.a===nd.id||f.b===nd.id));
+    const alpha=selectedId===null?0.18:isSelected?0.45:connected?0.28:0.04;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.strokeStyle=cat.stroke;
+    ctx.lineWidth=0.8;
+    ctx.setLineDash([]);
+    // start from edge of center ellipse
+    const dx=nd.x-ccx, dy=nd.y-ccy;
+    const len=Math.sqrt(dx*dx+dy*dy);
+    const ex=ccx+crw*(dx/len)*1.05, ey=ccy+crh*(dy/len)*1.05;
+    // end near node edge
+    const nx=nd.x-nd.rx*(dx/len)*0.95, ny=nd.y-nd.ry*(dy/len)*0.95;
+    ctx.beginPath();
+    const mx1=ex+(ccx-ex)*(-0.15)+dy*0.08;
+    const my1=ey+(ccy-ey)*(-0.15)-dx*0.08;
+    const mx2=nx+(nd.x-nx)*(-0.15)-dy*0.08;
+    const my2=ny+(nd.y-ny)*(-0.15)+dx*0.08;
+    ctx.moveTo(ex,ey);
+    ctx.bezierCurveTo(mx1,my1,mx2,my2,nx,ny);
+    ctx.stroke();
+    ctx.restore();
+  });
+
+  // Friction lines
+  frictions.forEach(f=>{
+    const a=nodes[f.a],b=nodes[f.b];
+    const isActive=selectedId===f.a||selectedId===f.b;
+    const alpha=selectedId===null?0.28:isActive?0.85:0.04;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.strokeStyle=FSTROKE[f.status];
+    ctx.lineWidth=selectedId!==null&&isActive?1.8:1;
+    if(f.status==='latent')ctx.setLineDash([6,5]);
+    else if(f.status==='early')ctx.setLineDash([2,4]);
+    else ctx.setLineDash([]);
+    curvedLine(a.x,a.y,b.x,b.y,ccx,ccy);
+    ctx.restore();
+  });
+
+  // Nodes
+  nodes.forEach(nd=>{
+    const cat=CAT[nd.cat];
+    const isSelected=selectedId===nd.id;
+    const connected=selectedId!==null&&frictions.some(f=>(f.a===selectedId||f.b===selectedId)&&(f.a===nd.id||f.b===nd.id));
+    const alpha=selectedId===null?1:isSelected?1:connected?1:0.22;
+    ctx.save();
+    ctx.globalAlpha=alpha;
+    ctx.beginPath();
+    ctx.ellipse(nd.x,nd.y,nd.rx,nd.ry,0,0,Math.PI*2);
+    ctx.fillStyle=isSelected?cat.stroke:cat.fill;
+    ctx.fill();
+    ctx.strokeStyle=cat.stroke;
+    ctx.lineWidth=isSelected?2:0.75;
+    ctx.setLineDash([]);
+    ctx.stroke();
+    const fs=Math.max(9,Math.round(nd.rx*0.175));
+    const textColor=isSelected?'#ffffff':cat.text;
+    drawLabel(nd.label,nd.x,nd.y,fs,textColor);
+    ctx.restore();
+  });
+
+  // Center node
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(ccx,ccy,crw,crh,0,0,Math.PI*2);
+  ctx.fillStyle='#162035';
+  ctx.fill();
+  ctx.strokeStyle='#3a7fc1';
+  ctx.lineWidth=1.2;
+  ctx.setLineDash([]);
+  ctx.stroke();
+  ctx.fillStyle='#b8cfe8';
+  ctx.font=`600 ${Math.round(W*0.011)}px 'DM Sans',sans-serif`;
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('Economic &',ccx,ccy-Math.round(H*0.018));
+  ctx.fillStyle='#7aa8cc';
+  ctx.font=`400 ${Math.round(W*0.009)}px 'DM Sans',sans-serif`;
+  ctx.fillText('Institutional Pressures',ccx,ccy+Math.round(H*0.018));
+  ctx.restore();
+}
+
+function hitTest(mx,my){
+  for(let i=nodes.length-1;i>=0;i--){
+    const nd=nodes[i];
+    const dx=(mx-nd.x)/nd.rx, dy=(my-nd.y)/nd.ry;
+    if(dx*dx+dy*dy<=1)return nd.id;
+  }
+  return null;
+}
+
+function showPanel(id){
+  const nd=nodes[id];
+  const cat=CAT[nd.cat];
+  const pc=document.getElementById('pc');
+  pc.textContent=cat.label; pc.style.color=cat.stroke;
+  document.getElementById('pn').textContent=nd.short;
+  document.getElementById('pd').textContent=nd.desc;
+  const connected=frictions.filter(f=>f.a===id||f.b===id);
+  document.getElementById('pfl').textContent=connected.length?`Friction connections (${connected.length}):`:' ';
+  document.getElementById('ptags').innerHTML=connected.map(f=>{
+    const other=nodes[f.a===id?f.b:f.a];
+    return `<span class="ptag" style="border-color:${FSTROKE[f.status]};color:${FSTROKE[f.status]}">${FSTATUS[f.status]} · ${other.short}</span>`;
+  }).join('');
+  document.getElementById('panel').classList.add('on');
+}
+
+function closePanel(){
+  selectedId=null;
+  document.getElementById('panel').classList.remove('on');
+  draw();
+}
+
+function downloadPNG(){
+  // Draw full canvas to a fresh canvas at 2x
+  const oc=document.createElement('canvas');
+  const scale=2;
+  oc.width=W*scale; oc.height=H*scale;
+  const octx=oc.getContext('2d');
+  octx.setTransform(scale,0,0,scale,0,0);
+  // Temporarily redirect draw to oc
+  const oldCtx=ctx;
+  // Redraw to oc
+  octx.clearRect(0,0,W,H);
+  octx.fillStyle='#0b1220';
+  octx.fillRect(0,0,W,H);
+
+  const ccx=W/2, ccy=H/2;
+  const crw=Math.round(W*0.085), crh=Math.round(H*0.075);
+
+  function curvedLineOC(x1,y1,x2,y2){
+    const cpx1=x1+(ccx-x1)*0.3, cpy1=y1+(ccy-y1)*0.3;
+    const cpx2=x2+(ccx-x2)*0.3, cpy2=y2+(ccy-y2)*0.3;
+    octx.beginPath();
+    octx.moveTo(x1,y1);
+    octx.bezierCurveTo(cpx1,cpy1,cpx2,cpy2,x2,y2);
+    octx.stroke();
+  }
+
+  // branch lines
+  nodes.forEach(nd=>{
+    const cat=CAT[nd.cat];
+    octx.save();
+    octx.globalAlpha=0.18;
+    octx.strokeStyle=cat.stroke;
+    octx.lineWidth=0.8;
+    octx.setLineDash([]);
+    const dx=nd.x-ccx,dy=nd.y-ccy;
+    const len=Math.sqrt(dx*dx+dy*dy);
+    const ex=ccx+crw*(dx/len)*1.05,ey=ccy+crh*(dy/len)*1.05;
+    const nx=nd.x-nd.rx*(dx/len)*0.95,ny=nd.y-nd.ry*(dy/len)*0.95;
+    octx.beginPath();
+    const mx1=ex+(ccx-ex)*(-0.15)+dy*0.08;
+    const my1=ey+(ccy-ey)*(-0.15)-dx*0.08;
+    const mx2=nx+(nd.x-nx)*(-0.15)-dy*0.08;
+    const my2=ny+(nd.y-ny)*(-0.15)+dx*0.08;
+    octx.moveTo(ex,ey);
+    octx.bezierCurveTo(mx1,my1,mx2,my2,nx,ny);
+    octx.stroke();
+    octx.restore();
+  });
+
+  // friction
+  frictions.forEach(f=>{
+    const a=nodes[f.a],b=nodes[f.b];
+    octx.save();
+    octx.globalAlpha=0.32;
+    octx.strokeStyle=FSTROKE[f.status];
+    octx.lineWidth=1;
+    if(f.status==='latent')octx.setLineDash([6,5]);
+    else if(f.status==='early')octx.setLineDash([2,4]);
+    else octx.setLineDash([]);
+    curvedLineOC(a.x,a.y,b.x,b.y);
+    octx.restore();
+  });
+
+  // nodes
+  nodes.forEach(nd=>{
+    const cat=CAT[nd.cat];
+    octx.save();
+    octx.beginPath();
+    octx.ellipse(nd.x,nd.y,nd.rx,nd.ry,0,0,Math.PI*2);
+    octx.fillStyle=cat.fill; octx.fill();
+    octx.strokeStyle=cat.stroke; octx.lineWidth=0.75;
+    octx.setLineDash([]); octx.stroke();
+    const fs=Math.max(9,Math.round(nd.rx*0.175));
+    octx.fillStyle=cat.text;
+    octx.font=`500 ${fs}px DM Sans,sans-serif`;
+    octx.textAlign='center'; octx.textBaseline='middle';
+    const lines=nd.label.split('\n');
+    const lh=fs*1.3;
+    lines.forEach((l,i)=>octx.fillText(l,nd.x,nd.y+(i-(lines.length-1)/2)*lh));
+    octx.restore();
+  });
+
+  // center
+  octx.save();
+  octx.beginPath();
+  octx.ellipse(ccx,ccy,crw,crh,0,0,Math.PI*2);
+  octx.fillStyle='#162035'; octx.fill();
+  octx.strokeStyle='#3a7fc1'; octx.lineWidth=1.2; octx.setLineDash([]); octx.stroke();
+  octx.fillStyle='#b8cfe8';
+  octx.font=`600 ${Math.round(W*0.011)}px DM Sans,sans-serif`;
+  octx.textAlign='center'; octx.textBaseline='middle';
+  octx.fillText('Economic &',ccx,ccy-Math.round(H*0.018));
+  octx.fillStyle='#7aa8cc';
+  octx.font=`400 ${Math.round(W*0.009)}px DM Sans,sans-serif`;
+  octx.fillText('Institutional Pressures',ccx,ccy+Math.round(H*0.018));
+  octx.restore();
+
+  // title
+  octx.fillStyle='#6a8aaa';
+  octx.font=`400 ${Math.round(W*0.009)}px DM Sans,sans-serif`;
+  octx.textAlign='left'; octx.textBaseline='top';
+  octx.fillText('Fringe Sketch — BLAW4320 · Marin Vale · 2026–2040',16,12);
+
+  const link=document.createElement('a');
+  link.download='fringe_sketch_economic_institutional_pressures.png';
+  link.href=oc.toDataURL('image/png');
+  link.click();
+}
+
+canvas.addEventListener('click',e=>{
+  const r=canvas.getBoundingClientRect();
+  const sx=W/r.width;
+  const mx=(e.clientX-r.left)*sx, my=(e.clientY-r.top)*sx;
+  const hit=hitTest(mx,my);
+  if(hit!==null){selectedId=hit;showPanel(hit);draw();}
+  else{closePanel();}
+});
+
+canvas.addEventListener('mousemove',e=>{
+  const r=canvas.getBoundingClientRect();
+  const sx=W/r.width;
+  canvas.style.cursor=hitTest((e.clientX-r.left)*sx,(e.clientY-r.top)*sx)!==null?'pointer':'default';
+});
+
+window.addEventListener('resize',()=>{resize();draw();});
+resize();
+draw();
+</script>
+</body>
+</html>
